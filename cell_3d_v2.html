@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Клетка и мембрана: 3D-урок</title>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:18px/1.55 "Segoe UI",system-ui,sans-serif;background:radial-gradient(1100px 520px at 8% -8%,#bae6fd,transparent),radial-gradient(900px 500px at 100% 0,#e9d5ff,transparent),#eef6ff;color:#0f172a}
+header{background:linear-gradient(100deg,#0c4a6e,#1d4ed8 55%,#7c3aed);color:#fff;padding:10px 14px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;box-shadow:0 4px 18px #1e3a8a55}
+h1{font-size:19px;margin:0 0 6px}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+button{font:inherit;font-weight:700;padding:9px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;cursor:pointer;box-shadow:0 3px 10px #2563eb44}
+button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+nav button{flex:none;background:#e0f2fe;color:#0c4a6e;font-size:15px;padding:6px 10px;box-shadow:none}
+nav .on,.tabs .on{background:#f59e0b;color:#000}
+main{max-width:920px;margin:auto;padding:14px}
+h2{font-size:28px;margin:.2em 0 .3em}
+.card{background:#fff;border-radius:18px;padding:12px;margin:10px 0;box-shadow:0 6px 24px #0c4a6e26}
+#ctl{display:flex;gap:8px;flex-wrap:wrap;position:sticky;bottom:0;background:#eef6ffdd;backdrop-filter:blur(6px);padding:10px 0}
+.tabs button{background:#e2e8f0;color:#0f172a;margin:0 6px 8px 0;padding:7px 12px;box-shadow:none}
+canvas{display:block;width:100%;aspect-ratio:16/10;border-radius:14px;cursor:grab;touch-action:pan-y;background:#bae6fd}
+canvas:active{cursor:grabbing}
+.pill{font-weight:700;color:#0c4a6e;margin:0 0 6px}
+small{color:#475569}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px}
+td,th{padding:6px;border-bottom:1px solid #cbd5e1;text-align:left;vertical-align:top}
+.tw{overflow-x:auto}
+.pa td:first-child{border-left:8px solid #16a34a}.ac td:first-child{border-left:8px solid #dc2626}.ve td:first-child{border-left:8px solid #2563eb}
+.q button{display:block;width:100%;text-align:left;background:#e2e8f0;color:#0f172a;margin:6px 0;box-shadow:none}
+.q .ok{background:#bbf7d0}.q .no{background:#fecaca}
+footer{max-width:920px;margin:auto;padding:0 14px 24px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.nb{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:13px;font-weight:800;margin-right:7px;vertical-align:middle;font-style:normal}
+.tabs button{display:inline-flex;align-items:center}
+@media(max-width:600px){canvas{aspect-ratio:4/3}}
+</style></head><body>
+<header><h1>Клетка, мембрана и транспорт веществ</h1><nav id="nav"></nav></header>
+<main><h2 id="h"></h2><p id="tx"></p><div id="st"></div>
+<div id="ctl"><button id="bs">Начать</button><button id="bp">Назад</button><button id="bn">Дальше</button><button id="bz">Пауза</button><button id="br">Повторить</button></div></main>
+<footer><small><b>Источники:</b> Alberts B. et al. Molecular Biology of the Cell; Campbell N. A. et al. Biology; OpenStax. Biology 2e, гл. 5 «Структура и функции плазматической мембраны». Все рисунки — условные схемы, не микрофотографии.</small></footer>
+<script>
+
+const $=s=>document.querySelector(s),rn=()=>Math.random()*2-1;
+let i=0,sub=0,raf,timer,run=!matchMedia('(prefers-reduced-motion:reduce)').matches;
+const SP={o:['#f97316','O₂'],k:['#16a34a','K⁺'],g:['#ec4899','Гл'],w:['#7dd3fc','H₂O','#0c4a6e'],s:['#8b5cf6','Бк'],n:['#e11d48','Na⁺'],h:['#14b8a6','H⁺']};
+const SC={
+sel:{ar:'⇅ У каждого вещества свой путь',x:'O₂ проходит между липидами. K⁺ — только через канал, глюкоза (Гл) — через переносчик. Крупный белок (Бк) не проходит совсем.',g:[['ch',170,'k','канал'],['cr',360,'g','переносчик']],p:{o:[8,2],k:[6,2],g:[6,2],s:[3,3]},c:'o'},
+tr:{ar:'⇅ Вещества идут внутрь и наружу',x:'Клетке нужен транспорт, чтобы получать питательные вещества и ионы, выводить продукты обмена, поддерживать состав внутренней среды и создавать градиенты концентрации.',g:[['ch',110,'k','канал'],['cr',250,'g','переносчик'],['cy',430,[['n',3,1,0],['k',2,0,1]],'насос',1]],p:{o:[6,2],k:[3,8],g:[6,2],n:[10,3]}},
+dif:{ar:'⬇ По градиенту: от большей концентрации к меньшей',x:'Простая диффузия: небольшие неполярные молекулы (O₂, CO₂) проходят между липидами. Каждая частица движется случайно, но в сумме поток идёт к меньшей концентрации. АТФ не нужен.',g:[],p:{o:[14,2]},c:'o'},
+osm:{ar:'⬇ Вода идёт туда, где больше растворённых веществ',x:'Осмос — движение воды через избирательно проницаемую мембрану. Растворённые частицы (Бк) не проходят, а вода идёт через аквапорины — белковые каналы для воды. АТФ не нужен.',g:[['aq',150,'w','аквапорин'],['aq',320,'w','аквапорин'],['aq',490,'w','аквапорин']],p:{w:[10,5],s:[0,8]},c:'w'},
+fch:{ar:'⬇ По градиенту, без АТФ',x:'Облегчённая диффузия через канал: ион проходит через белок-канал по градиенту. Для ионов важен электрохимический градиент — разница концентраций плюс влияние электрического заряда.',g:[['ch',320,'k','канал']],p:{k:[12,2]},c:'k'},
+fcr:{ar:'⬇ По градиенту, без АТФ',x:'Облегчённая диффузия через переносчик: белок связывает частицу, меняет форму и отпускает её с другой стороны. Идёт по градиенту, АТФ не нужен.',g:[['cr',320,'g','переносчик']],p:{g:[12,2]},c:'g'},
+pmp:{ar:'⬆ Против градиента: нужна энергия АТФ',x:'Na⁺/K⁺-насос (первично-активный транспорт): гидролиз 1 АТФ до АДФ и Фн меняет форму белка. За цикл 3 Na⁺ уходят наружу, 2 K⁺ входят внутрь.',g:[['cy',320,[['n',3,1,0],['k',2,0,1]],'Na⁺/K⁺-насос',1]],p:{n:[12,3],k:[3,12]},c:'n'},
+sym:{ar:'⬇ Na⁺ по градиенту тянет Гл ⬇ против градиента',x:'Симпорт: оба вещества идут в одну сторону. Na⁺ движется по градиенту, который ранее создал насос, и эта энергия переносит глюкозу внутрь против её градиента. Сам переносчик АТФ не расщепляет.',g:[['cy',320,[['n',1,0,1],['g',1,0,1]],'симпорт',0]],p:{n:[12,3],g:[3,9]},c:'g'},
+anti:{ar:'⬇ Na⁺ по градиенту, ⬆ H⁺ против градиента',x:'Антипорт: вещества идут в противоположные стороны. Na⁺ входит по градиенту, и за счёт этой энергии H⁺ выводится наружу против градиента.',g:[['cy',320,[['n',1,0,1],['h',1,1,0]],'антипорт',0]],p:{n:[12,3],h:[8,3]},c:'h'}};
+const V=[['Эндоцитоз',1,1,0,'Эндоцитоз: мембрана охватывает материал и образует пузырёк внутри клетки. Нужна энергия клетки.'],
+['Фагоцитоз',1,'big',0,'Фагоцитоз — захват крупных частиц, например бактерий клетками иммунной системы.'],
+['Пиноцитоз',1,3,0,'Пиноцитоз — захват капелек жидкости с растворёнными веществами.'],
+['Рецепторный',1,1,1,'Рецептор-опосредованный эндоцитоз: рецепторы (зелёные Y-образные «антенны») связывают нужное вещество, и пузырёк захватывает именно его. Иногда пузырёк проходит через всю клетку — это трансцитоз.'],
+['Экзоцитоз',-1,1,0,'Экзоцитоз: пузырёк сливается с мембраной и выводит содержимое наружу.']];
+const MT={lip:['Бислой','Фосфолипидный бислой — два слоя молекул липидов. Это основа мембраны.'],head:['Головки','Гидрофильные головки (синие шарики) «дружат» с водой, поэтому смотрят наружу и внутрь клетки — туда, где вода.'],tail:['Хвосты','Гидрофобные хвосты (жёлтые нити) избегают воды и спрятаны внутри бислоя. Эта жирная середина не пропускает ионы и крупные полярные молекулы.'],int:['Интегральный белок','Интегральные белки (оранжевый) встроены в бислой и проходят через него насквозь.'],chn:['Белок-канал','Белок-канал (фиолетовый) — сквозной проход: по нему ионы или вода (голубые шарики) идут по градиенту.'],per:['Периферический белок','Периферические белки сидят на поверхности мембраны (часто с внутренней стороны) и не пронизывают её; они могут связывать мембрану с цитоскелетом (оранжевые нити).'],chol:['Холестерин','Холестерин (жёлтые) есть в мембранах животных клеток: он регулирует текучесть — не даёт мембране стать слишком жидкой при тепле и слишком жёсткой при холоде.'],glp:['Гликопротеин','Гликопротеины — белки с углеводными цепочками (бусины) на наружной стороне; участвуют в узнавании клеток.'],gll:['Гликолипид','Гликолипиды — липиды с углеводными цепочками на наружной стороне; тоже участвуют в узнавании клеток.'],car:['Белок-переносчик','Белок-переносчик (розово-фиолетовый) связывает частицу и меняет форму: щель то открывается наружу, то внутрь.']};
+const TB=[['pa','Пассивный: простая диффузия','нет','по градиенту','нет','O₂, CO₂'],['pa','Пассивный: осмос','аквапорины (для воды)','вода — туда, где больше растворённых веществ','нет','вода в клетках'],['pa','Пассивный: через канал','белок-канал','по градиенту','нет','ионы K⁺'],['pa','Пассивный: через переносчик','белок-переносчик','по градиенту','нет','глюкоза'],['ac','Активный первичный','белок-насос','против градиента','да','Na⁺/K⁺-насос'],['ac','Активный вторичный','переносчик (симпорт, антипорт)','против градиента для одного из веществ','нет: используется градиент, созданный насосом','Na⁺-глюкозный симпорт'],['ve','Пузырьковый (эндо-, экзоцитоз)','мембранные белки, рецепторы','не сводится к градиенту','энергия клетки нужна','фагоцитоз, выделение секрета']];
+const Q=[['Из чего главным образом состоит мембрана?',['Только из белков','Из фосфолипидного бислоя и белков','Из целлюлозы'],1,'Основа — два слоя фосфолипидов, в которые встроены белки.'],
+['Как расположены фосфолипиды в бислое?',['Головки обращены к воде, хвосты спрятаны внутри','Хвосты обращены к воде, головки внутри','Молекулы лежат беспорядочно'],0,'Гидрофильные головки тянутся к воде, гидрофобные хвосты прячутся внутри.'],
+['Куда идёт пассивный перенос?',['От меньшей концентрации к большей','С затратой АТФ','От большей концентрации к меньшей'],2,'Вниз по градиенту, АТФ напрямую не нужен.'],
+['Что делает Na⁺/K⁺-насос за один цикл?',['1 АТФ: 2 Na⁺ наружу, 3 K⁺ внутрь','1 АТФ: 3 Na⁺ наружу, 2 K⁺ внутрь','Без АТФ: 3 Na⁺ внутрь'],1,'Расходуется 1 АТФ: 3 Na⁺ выводятся, 2 K⁺ вводятся.'],
+['Чем симпорт отличается от антипорта?',['Ничем','Симпорт — в одну сторону, антипорт — в противоположные','Симпорт — в противоположные, антипорт — в одну'],1,'«Сим» — вместе, в одну сторону; «анти» — навстречу друг другу.']];
+const S=[
+{n:'Клетка',m:'cell',t:'Клетка — основная структурная и функциональная единица живого организма. Клетки бывают разными по форме и размеру: нейрон не похож на эритроцит.'},
+{n:'Что такое мембрана',m:'sim',tabs:[['','sel']],t:'Мембрана отделяет содержимое клетки от внешней среды и регулирует обмен. Она избирательно проницаема: разные вещества проходят разными путями, а некоторые не проходят.'},
+{n:'Строение мембраны',m:'mem',t:'Нажмите на кнопку — нужная часть подсветится на схеме. Номера на схеме совпадают с номерами на кнопках.'},
+{n:'Транспорт веществ',m:'sim',tabs:[['','tr']],t:'Транспорт веществ — перемещение молекул и ионов внутрь клетки, наружу или между клеточными компартментами.'},
+{n:'Пассивный транспорт',m:'sim',tabs:[['Диффузия','dif'],['Осмос','osm'],['Канал','fch'],['Переносчик','fcr']],t:'Градиент концентрации — разница концентрации по разные стороны мембраны. По градиенту частицы идут пассивно: клетка не тратит АТФ напрямую.'},
+{n:'Активный транспорт и АТФ',m:'sim',tabs:[['Насос Na⁺/K⁺','pmp'],['Симпорт','sym'],['Антипорт','anti']],t:'АТФ — молекула, которая передаёт клетке энергию: она распадается на АДФ и фосфат (Фн), и энергия меняет форму белка. Белок сам по себе не означает расход АТФ: важны направление относительно градиента и источник энергии.'},
+{n:'Крупные частицы',m:'ves',tabs:V.map(v=>[v[0]]),t:'Крупные частицы переносятся в пузырьках. Оболочка пузырька — тоже липидный бислой. Это не канал и не насос, нужна энергия клетки.'},
+{n:'Сравнение',m:'tab',t:'Цвет полосы слева: зелёный — пассивный, красный — активный, синий — пузырьковый.'},
+{n:'Тест',m:'quiz',t:'Ответьте на 5 вопросов — результат виден сразу.'}];
+$('#nav').innerHTML=S.map((s,j)=>`<button onclick="go(${j})">${j+1}. ${s.n}</button>`).join('');
+function go(n){i=Math.max(0,Math.min(S.length-1,n));sub=0;view();scrollTo(0,0)}
+function view(){clearInterval(timer);cancelAnimationFrame(raf);const s=S[i],st=$('#st');st.innerHTML='';
+$('#h').textContent=`${i+1}. ${s.n}`;$('#tx').textContent=s.t;
+document.querySelectorAll('nav button').forEach((b,j)=>b.classList.toggle('on',j==i));
+if(s.tabs&&s.tabs.length>1){st.innerHTML=`<div class="tabs">${s.tabs.map((t,j)=>`<button class="${j==sub?'on':''}" data-j="${j}">${t[0]}</button>`).join('')}</div>`;st.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{sub=+b.dataset.j;view()})}
+if(s.m=='sim')sim(st,s.tabs[sub][1]);else({cell:cellV,mem:memV,ves:vesV,tab:tabV,quiz:quizV})[s.m](st)}
+function tabV(st){st.innerHTML=`<div class="card tw"><table><tr><th>Способ</th><th>Белок</th><th>Направление</th><th>АТФ напрямую</th><th>Пример</th></tr>${TB.map(r=>`<tr class="${r[0]}">${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div><p>Вторично-активный перенос использует энергию градиента, а не обязательно расщепляет АТФ самим переносчиком.</p>`}
+function quizV(st){let sc=0,d=0;const f=document.createElement('div');f.className='card';
+Q.forEach(([q,o,a,e],n)=>{const b=document.createElement('div'),r=document.createElement('p');b.className='card q';b.innerHTML=`<b>${n+1}. ${q}</b>`;
+o.forEach((t,j)=>{const x=document.createElement('button');x.textContent=t;x.onclick=()=>{if(b.dataset.d)return;b.dataset.d=1;d++;if(j==a)sc++;b.querySelectorAll('button')[a].className='ok';if(j!=a)x.className='no';r.textContent=(j==a?'Верно! ':'Неверно. ')+e;if(d==Q.length)f.innerHTML=`<b>Результат: ${sc} из ${Q.length}</b> <button onclick="view()">Пройти ещё раз</button>`};b.append(x)});
+b.append(r);st.append(b)});st.append(f);
+st.insertAdjacentHTML('beforeend','<div class="card"><b>Вывод</b><ol><li>Мембрана состоит главным образом из фосфолипидного бислоя и белков.</li><li>По градиенту вещества обычно перемещаются пассивно; белок может облегчить проход.</li><li>Перенос против градиента требует источника энергии.</li></ol></div>')}
+
+/* ================= 3D-движок на Canvas (без библиотек) ================= */
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const SPR={};
+const hx=c=>[1,3,5].map(i=>parseInt(c.substr(i,2),16));
+const mx=(a,b,f)=>{const A=hx(a),B=hx(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*f).toString(16).padStart(2,'0')).join('')};
+function spr(c,lv,soft){const key=c+lv+(soft?'s':'');if(SPR[key])return SPR[key];
+const S=128,k=document.createElement('canvas');k.width=k.height=S;const g=k.getContext('2d'),b=lv?mx(c,'#6f93cc',lv*.13):c;
+const r=g.createRadialGradient(S*.38,S*.34,S*.03,S*.5,S*.5,S*.5);
+if(soft){r.addColorStop(0,mx(b,'#ffffff',.18));r.addColorStop(.6,b);r.addColorStop(1,mx(b,'#000000',.3))}
+else{r.addColorStop(0,mx(b,'#ffffff',.8));r.addColorStop(.22,mx(b,'#ffffff',.2));r.addColorStop(.62,b);r.addColorStop(1,mx(b,'#000000',.55))}
+g.fillStyle=r;g.beginPath();g.arc(S/2,S/2,S/2-1,0,7);g.fill();
+const h=g.createRadialGradient(S*.34,S*.28,0,S*.34,S*.28,S*.16);h.addColorStop(0,'rgba(255,255,255,'+(soft?.38:.95)+')');h.addColorStop(1,'rgba(255,255,255,0)');
+g.fillStyle=h;g.beginPath();g.arc(S*.34,S*.28,S*.18,0,7);g.fill();return SPR[key]=k}
+const BGD=[[0,'#86b2e6'],[.42,'#d4e3f6'],[.52,'#f2e6d9'],[1,'#efb683']];
+function mkBG(W,H,st){const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),gr=g.createLinearGradient(0,0,0,H);
+(st||BGD).forEach(x=>gr.addColorStop(x[0],x[1]));g.fillStyle=gr;g.fillRect(0,0,W,H);
+let sd=7;const R=()=>(sd=sd*16807%2147483647)/2147483647,cs=['#4ade80','#fb923c','#a78bfa','#f472b6','#60a5fa','#fde047'];
+for(let i=0;i<24;i++){const x=R()*W,y=R()*H,r=(24+R()*70)*W/800,q=cs[i%6],rg=g.createRadialGradient(x,y,0,x,y,r);
+rg.addColorStop(0,q+'59');rg.addColorStop(.7,q+'24');rg.addColorStop(1,q+'00');g.fillStyle=rg;g.beginPath();g.arc(x,y,r,0,7);g.fill()}return c}
+function V3(cv,bd,o){
+const g=cv.getContext('2d'),s={yaw:o.auto?o.auto[0]:0,pitch:o.pitch||.34,D:48,Wv:20,t:0,sel:null,tx:0,ty:0,tz:0,dr:0,off:0};let lx=0,ly=0,bgc=null,bw=0,bh=0;
+cv.onpointerdown=e=>{s.dr=1;s.off=1;lx=e.clientX;ly=e.clientY;try{cv.setPointerCapture(e.pointerId)}catch(_){}};
+cv.onpointerup=cv.onpointercancel=()=>{s.dr=0};
+cv.onpointermove=e=>{if(!s.dr)return;s.yaw+=(e.clientX-lx)*.008;if(o.lim){const c0=o.auto?o.auto[0]:0;s.yaw=cl(s.yaw,c0-.9,c0+.9)}
+if(e.pointerType=='mouse')s.pitch=cl(s.pitch+(e.clientY-ly)*.006,.05,1.25);lx=e.clientX;ly=e.clientY};
+const fr=()=>{
+if(run)s.t++;
+const d=Math.min(window.devicePixelRatio||1,cv.clientWidth<500?1.5:2),w=cv.clientWidth|0,h=cv.clientHeight|0;
+if(w&&(cv.width!=w*d||cv.height!=h*d)){cv.width=w*d;cv.height=h*d}
+const W=cv.width,H=cv.height,u=W/800,it=[],q=[],lb=[];
+if(o.auto&&!s.off)s.yaw=o.auto[0]+Math.sin(s.t*.007)*o.auto[1];
+s.tx=s.ty=s.tz=0;bd(it,s);
+if(!bgc||bw!=W||bh!=H){bgc=mkBG(W,H,o.bg);bw=W;bh=H}
+g.globalAlpha=1;g.drawImage(bgc,0,0);
+const cy=Math.cos(s.yaw),sy=Math.sin(s.yaw),cp=Math.cos(s.pitch),sp=Math.sin(s.pitch),F=800*s.D/s.Wv*u;
+const pj=(x,y,z)=>{x-=s.tx;y-=s.ty;z-=s.tz;const a=x*cy+z*sy,b=-x*sy+z*cy,c=y*cp-b*sp,e=y*sp+b*cp,k=F/(s.D-e);return[W/2+a*k,H/2-c*k,e,k]};
+for(const i of it){if(i.t){lb.push(i);continue}
+if(i.qd){q.push({z:-1e4,i});continue}
+if(i.pl){const m=i.p[i.p.length>>1];q.push({z:pj(m[0],m[1],m[2])[2],i});continue}
+if(i.l){const a=pj(i.x,i.y,i.z),b=pj(i.x2,i.y2,i.z2);q.push({z:(a[2]+b[2])/2,i,a,b})}else{const a=pj(i.x,i.y,i.z);q.push({z:a[2],i,a})}}
+q.sort((a,b)=>a.z-b.z);
+g.lineCap='round';g.lineJoin='round';g.textAlign='center';
+for(const e of q){const i=e.i,al=(i.a==null?1:i.a)*(s.sel&&i.tag&&!s.sel.includes(i.tag)?.22:1);if(al<.02)continue;g.globalAlpha=al;
+if(i.qd){const P=i.p.map(p=>pj(p[0],p[1],p[2])),gr=g.createLinearGradient(0,P[0][1],0,P[2][1]);gr.addColorStop(0,i.g[0]);gr.addColorStop(1,i.g[1]);
+g.fillStyle=gr;g.beginPath();P.forEach((p,k)=>k?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();g.fill()}
+else if(i.pl){const P=i.p.map(p=>pj(p[0],p[1],p[2])),kk=P[P.length>>1][3],W0=i.w*kk;
+const path=()=>{g.beginPath();P.forEach((p,k)=>k?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]))};
+g.strokeStyle=i.c;g.lineWidth=W0+1.4*u;path();g.stroke();g.strokeStyle=i.c2;g.lineWidth=Math.max(1,W0*.62);path();g.stroke();
+if(i.c3){g.strokeStyle=i.c3;g.globalAlpha=al*.7;g.lineWidth=Math.max(1,W0*.2);g.translate(-W0*.12,-W0*.14);path();g.stroke();g.translate(W0*.12,W0*.14)}}
+else if(i.l){g.strokeStyle=i.c;g.lineWidth=Math.max(1,i.w*e.a[3]);g.beginPath();g.moveTo(e.a[0],e.a[1]);g.lineTo(e.b[0],e.b[1]);g.stroke()}
+else{const r=i.r*e.a[3],lv=e.a[2]>-1.4?0:e.a[2]>-3.8?1:2;g.drawImage(spr(i.c,lv,i.soft),e.a[0]-r,e.a[1]-r,2*r,2*r);
+if(i.txt&&r>7){g.fillStyle=i.tc||'#fff';g.font='700 '+r*.8+'px sans-serif';g.fillText(i.txt,e.a[0],e.a[1]+r*.28)}}}
+g.globalAlpha=1;
+const U0=Math.max(u,.85*d);
+for(const i of lb){const p=pj(i.x,i.y,i.z),X=p[0]+(i.dx||0)*U0,Y=p[1]+(i.dy||0)*U0;g.globalAlpha=i.a==null?1:i.a;
+if(i.n){const R=((i.hl?19:15)+(i.hl?Math.sin(s.t*.12)*1.4:0))*U0;
+g.save();g.shadowColor='rgba(15,23,42,.45)';g.shadowBlur=7*U0;g.fillStyle='#fff';g.beginPath();g.arc(X,Y,R+2.6*U0,0,7);g.fill();g.restore();
+g.fillStyle=i.bc;g.beginPath();g.arc(X,Y,R,0,7);g.fill();
+g.fillStyle='#fff';g.font='800 '+(i.n>9?13:16)*U0*(i.hl?1.12:1)+'px sans-serif';g.textBaseline='middle';g.fillText(i.n,X,Y+.6*U0);g.textBaseline='alphabetic';
+if(i.hl&&i.txt){g.font='800 '+15*U0+'px sans-serif';const tw=g.measureText(i.txt).width+16*U0;g.fillStyle='#fff';g.shadowColor='rgba(15,23,42,.3)';g.shadowBlur=6*U0;
+const bx=Math.min(Math.max(X+R+8*U0,6*U0),W-tw-6*U0);g.beginPath();g.roundRect?g.roundRect(bx,Y-13*U0,tw,26*U0,9*U0):g.rect(bx,Y-13*U0,tw,26*U0);g.fill();g.shadowBlur=0;
+g.fillStyle=i.bc;g.textAlign='left';g.fillText(i.txt,bx+8*U0,Y+5.5*U0);g.textAlign='center'}}
+else{if(i.dx||i.dy){g.strokeStyle=i.c;g.lineWidth=2*U0;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(X,Y);g.stroke();g.fillStyle=i.c;g.beginPath();g.arc(p[0],p[1],3*U0,0,7);g.fill()}
+g.font='800 '+15*U0+'px sans-serif';g.textAlign=i.dx<-5?'right':i.dx>5?'left':'center';g.lineWidth=5*U0;g.strokeStyle='#fff';g.strokeText(i.txt,X,Y);g.fillStyle=i.c;g.fillText(i.txt,X,Y);g.textAlign='center'}}
+g.globalAlpha=1;g.textAlign='left';
+for(const f of o.fix||[]){g.font='800 '+17*U0+'px sans-serif';g.lineWidth=5*U0;g.strokeStyle='#fff';g.strokeText(f[0],f[1]*W,f[2]*H);g.fillStyle=f[3];g.fillText(f[0],f[1]*W,f[2]*H)}
+raf=requestAnimationFrame(fr)};
+fr();return s}
+
+/* ---- фосфолипидный бислой: синие головки + волнистые жёлтые хвосты ---- */
+function lip(it,t,holes,disp,zc,o){o=o||{};const X=o.xr||12,S=.95,rows=o.rows||6;zc=zc==null?99:zc;const zb=-(rows-1)*.82-.5;
+it.push({qd:1,p:[[-X-3,2.1,zb],[X+3,2.1,zb],[X+3,-2.1,zb],[-X-3,-2.1,zb]],g:['#b3800f','#8a5a08'],tag:'tail'});
+for(let j=-(rows-1);j<=1;j++){const z=j*.82;if(z>zc)continue;
+for(let n=-15;n<=15;n++){const x=n*S+((j&1)?S/2:0);if(Math.abs(x)>X+1)continue;
+if(holes.some(h=>(x-h[0])**2+(z-h[1])**2<h[2]*h[2]))continue;
+for(const L of[1,-1]){const d=disp?disp(x,z,L):0,ph=n*1.7+j*2.3+(L>0?0:1.1),sw=Math.sin(t*.04+ph)*.06,yh=L*1.9+d+sw;
+it.push({x:x+sw*.4,y:yh,z,r:.5,c:'#2f6fe4',tag:'head'});
+for(let m=0;m<2;m++){const P=[];for(let k=0;k<=6;k++){const a=ph+m*2.6+k*1.45+t*.045;
+P.push([x+(m?-.2:.2)+.13*Math.sin(a),yh-L*(.25+k*.27),z+.13*Math.cos(a*.9+m)])}
+it.push({pl:1,p:P,c:'#b07a0c',c2:'#f6c71e',w:.13,tag:'tail'})}}}}}
+
+/* ---- «лепные» белки: оболочка из мягких шаров с освещением ---- */
+const H1=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v)};
+const LG=(()=>{const v=[-.45,.7,.55],m=Math.hypot(...v);return v.map(a=>a/m)})(),SHC={};
+const shades=c=>SHC[c]||(SHC[c]=[0,1,2,3,4,5,6,7].map(i=>{const f=i/7;return f<.45?mx(c,'#1b1030',(.45-f)*.9):mx(c,'#ffffff',(f-.45)*.75)}));
+function blob(rx,ry,rz,n,sd,o){o=o||{};const P=[];
+for(let i=0;i<n;i++){const y=1-2*(i+.5)/n,q=Math.sqrt(1-y*y),a=i*2.39996+sd,dx=Math.cos(a)*q,dz=Math.sin(a)*q,yn=Math.sign(y)*Math.pow(Math.abs(y),o.pw||.6),
+lm=1+.09*Math.sin(5*dx+sd)*Math.cos(4*y+sd*1.3)+.07*Math.sin(6*dz+y*3+sd),fl=1+(o.flare||0)*Math.pow(Math.abs(yn),2.2)-(o.waist||0)*Math.pow(1-Math.abs(yn),2),
+ny=yn*.4,nm=Math.hypot(dx,ny,dz)||1,li=(dx*LG[0]+ny*LG[1]+dz*LG[2])/nm;
+P.push({x:dx*rx*lm*fl,y:yn*ry,z:dz*rz*lm*fl,r:(o.r||.36)*1.22*(.92+.16*H1(i,sd)),sh:Math.round(cl(.5+li*.55)*7),sd:dx<0?-1:1})}return P}
+function put(it,P,cx,cy,cz,c,tag,o){o=o||{};const sh=shades(c);
+for(const p of P)it.push({x:cx+p.x+(o.dx||0)+(o.sep?o.sep(p.y)*(o.sg||p.sd):0),y:cy+p.y,z:cz+p.z,r:p.r,c:sh[p.sh],soft:1,tag})}
+function core(it,cx,cz,ry,fn,tag){for(let y=-ry+.15;y<=ry-.1;y+=.22){const r=fn(y);if(r>.04)it.push({x:cx,y,z:cz-.25,r,c:'#2a1458',soft:1,tag})}}
+function beads(it,x,y,z,tag,c,sc,sd){sc=sc||1;let p=[x,y,z];const add=q=>it.push({x:q[0],y:q[1],z:q[2],r:.17*sc,c,tag});
+for(let k=1;k<=3;k++){p=[x+.08*Math.sin(k*2+sd)*sc,y+.33*k*sc,z+.07*Math.cos(k+sd)*sc];add(p)}
+const b=p;for(const sg of[-1,1])for(let k=1;k<=4;k++)add([b[0]+sg*.27*k*sc+.04*Math.sin(k*3+sd),b[1]+.26*k*sc,b[2]+.09*Math.sin(k*2+sg)*sc])}
+function chol(it,x,L,z,tag){const ys=[1.35,.82,.3,-.2],rs=[.34,.46,.5,.4];
+ys.forEach((y,i)=>it.push({x:x+(i%2?.1:-.1),y:L*y,z,r:rs[i],c:'#f6d52e',tag}));
+it.push({x:x+.05,y:L*1.62,z,r:.24,c:'#ff9a1f',tag});it.push({x:x-.08,y:L*-.62,z,r:.22,c:'#f6d52e',tag})}
+const op=(y,s)=>Math.pow(cl((y/2.7+1)/2),1.5)*(1-s)+Math.pow(cl((1-y/2.7)/2),1.5)*s;
+const FX=[['снаружи клетки',.02,.07,'#0c4a6e'],['внутри клетки',.02,.96,'#7c2d12']];
+
+/* ================= 1. Клетка ================= */
+function cellV(st){
+st.innerHTML='<div class="card"><canvas id="cv" role="img" aria-label="Объёмная модель клетки в разрезе"></canvas><small>Условная объёмная модель клетки в разрезе, а не микрофотография. Потяните, чтобы повернуть.</small></div><button id="zm">Приблизить границу</button>';
+const N=700,D=[],NU=[-.6,-.2,-.5],RB=[],MI=[[-3,-2,1],[2.5,-2.8,-1],[-2,2.8,-2.5],[1,3.2,-3],[3,.6,-2.4],[-3.6,.4,-2],[.4,-3.6,-2.6],[2.8,-1,2.4]],
+nuc=blob(2.1,2.1,2.1,300,5,{pw:1,r:.3}),mito=MI.map((m,i)=>blob(.95,.5,.5,46,i*3+1,{pw:1,r:.2}));
+for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,r=Math.sqrt(1-y*y),a=i*2.39996;D.push([Math.cos(a)*r,y,Math.sin(a)*r])}
+for(let i=0;i<130;i++){const y=1-2*(i+.5)/130,r=Math.sqrt(1-y*y),a=i*2.39996,k=4.9*Math.cbrt(H1(i,3.3)),p=[Math.cos(a)*r*k,y*k,Math.sin(a)*r*k];if(Math.hypot(p[0]-NU[0],p[1]-NU[1],p[2]-NU[2])>2.6)RB.push(p)}
+let zt=0,ez=0;
+$('#zm').onclick=()=>{zt=zt?0:1;$('#zm').textContent=zt?'Отдалить':'Приблизить границу'};
+V3($('#cv'),(it,c)=>{
+if(c.t==120&&run){zt=1;$('#zm').textContent='Отдалить'}
+ez+=(zt-ez)*(run?.045:1);if(Math.abs(zt-ez)<.003)ez=zt;
+const e=ez*ez*(3-2*ez),wb=(i,a)=>Math.sin(c.t*.02+i*1.7)*a;
+if(!c.off){c.yaw=-.785*(1-.55*e)+Math.sin(c.t*.006)*.5*(1-e);c.pitch=.42-.2*e}
+c.Wv=19-10.6*e;c.tx=5.7*e;c.tz=-.15*e;
+for(const[x,y,z]of D){if(x>0&&z>0)continue;
+it.push({x:x*6.2,y:y*6.2,z:z*6.2,r:.37,c:'#2f6fe4'});it.push({x:x*5.15,y:y*5.15,z:z*5.15,r:.3,c:'#2a5fd0'});
+it.push({l:1,x:x*5.85,y:y*5.85,z:z*5.85,x2:x*5.4,y2:y*5.4,z2:z*5.4,c:'#e5b414',w:.11})}
+put(it,nuc,NU[0],NU[1]+wb(0,.05),NU[2],'#8b4fd8');
+for(let k=0;k<9;k++){const p=nuc[k*33];it.push({x:NU[0]+p.x*1.02,y:NU[1]+p.y*1.02,z:NU[2]+p.z*1.02,r:.2,c:'#3b0764',soft:1})}
+for(let k=0;k<16;k++){const a=.4+k*.17;it.push({x:NU[0]+3.1*Math.cos(a),y:NU[1]+.9*Math.sin(3*a)+wb(k,.08),z:NU[2]+3.1*Math.sin(a),r:.25,c:'#f472b6'})}
+MI.forEach((m,i)=>put(it,mito[i],m[0],m[1]+wb(i,.2),m[2],'#f0572b'));
+for(const p of RB)it.push({x:p[0],y:p[1],z:p[2],r:.13,c:'#fde047'});
+if(e<.4){it.push({t:1,x:-5.08,y:2.79,z:2.2,txt:'мембрана',dx:-80,dy:-50,c:'#1d4ed8'});it.push({t:1,x:2.2,y:-2.6,z:2.4,txt:'цитоплазма',dx:70,dy:60,c:'#9a3412'});it.push({t:1,x:-.6,y:1.9,z:-.5,txt:'ядро',dx:-30,dy:-60,c:'#5b21b6'})}
+else if(e>.5){const a=(e-.5)*2;it.push({t:1,x:5.7,y:0,z:-.15,txt:'фосфолипидный бислой',dx:100,dy:-90,c:'#1e3a8a',a});it.push({t:1,x:6.5,y:0,z:0,txt:'снаружи клетки',dx:90,dy:50,c:'#0c4a6e',a});it.push({t:1,x:4.7,y:0,z:0,txt:'внутри клетки',dx:-110,dy:70,c:'#7c2d12',a})}
+},{bg:[[0,'#a5c8ee'],[1,'#e8f1fb']]})}
+
+/* ================= 3. Строение мембраны ================= */
+const KS=['lip','head','tail','int','chn','per','chol','glp','gll','car'],BC=['#16a34a','#dc2626','#f97316','#2563eb','#0891b2','#db2777','#ca8a04','#e11d48','#7c3aed','#0d9488'],
+SEL={lip:['head','tail'],head:['head'],tail:['tail'],int:['int'],chn:['chn'],per:['per'],chol:['chol'],glp:['glp'],gll:['gll'],car:['car']};
+function memV(st){
+st.innerHTML='<div class="card"><canvas id="cv" role="img" aria-label="Объёмная схема строения мембраны в разрезе"></canvas><small>Схема в разрезе, сильно увеличена и не показывает реальные размеры. Потяните, чтобы повернуть.</small></div><div class="tabs">'+KS.map((k,j)=>'<button data-k="'+k+'"><i class="nb" style="background:'+BC[j]+'">'+(j+1)+'</i>'+MT[k][0]+'</button>').join('')+'<button id="sq">Разобрать по шагам</button></div><div class="card" id="md">Выберите элемент мембраны.</div>';
+const INT=blob(.95,2.75,.85,170,3,{flare:.22,waist:.1,r:.36}),CH=[blob(.62,2.8,.8,125,5,{flare:.12,waist:.05,r:.34}),blob(.62,2.8,.8,125,6,{flare:.12,waist:.05,r:.34})],
+CA=[blob(.7,2.8,.85,135,8,{flare:.1,r:.34}),blob(.7,2.8,.85,135,9,{flare:.1,r:.34})],GP=blob(.95,1.3,.8,75,14,{pw:.8,r:.36}),GR=blob(.8,1.15,.7,60,17,{pw:.8,r:.36}),PE=blob(1.5,.85,.9,95,11,{pw:1,r:.36}),
+FB=[[0,-4.7,.2,.3],[1.7,-5.1,.6,.27],[3.1,-4.5,-.6,.25],[4.4,-5.5,.1,.22]],
+HO=[[-5.6,0,1.45],[.9,0,1.95],[5.4,0,1.5]],
+BD=[[1,-10.5,0,.7,0,0],[2,-3.3,2.1,.6,0,0],[3,-8.1,.9,.7,0,0],[4,-5.6,-.4,1.1,0,0],[5,.9,.6,1.3,0,0],[6,7.4,-3.8,1.2,0,0],[7,-3.6,.8,.6,0,0],[8,-1.9,2.5,1.1,0,0],[9,3.7,2.9,.8,0,0],[10,5.4,.3,1.3,0,0]];
+let cur=null;
+const sel=k=>{cur=k;c.sel=SEL[k];st.querySelectorAll('.tabs button[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k==k));$('#md').innerHTML='<b>'+MT[k][0]+'.</b> '+MT[k][1]};
+const c=V3($('#cv'),(it,s)=>{
+s.Wv=22;if(!s.off)s.pitch=.34;s.ty=.1;const t=s.t;
+lip(it,t,HO,null,.5,{xr:12});
+put(it,INT,-5.6,-.05,0,'#e0703a','int');
+CH.forEach((P,i)=>put(it,P,.9,-.05,0,'#8b3fd0','chn',{dx:i?1.12:-1.12}));core(it,.9,0,2.8,()=>.2,'chn');
+for(let n=0;n<8;n++){const y=4.9-((t*.03+n*1.2)%9.6);it.push({x:.9,y,z:.15,r:.2,c:'#8ad8ff',tag:'chn'})}
+const cst=Math.sin(t*.02)*.5+.5;
+CA.forEach((P,i)=>put(it,P,5.4,-.05,0,'#b44fd6','car',{dx:i?.7:-.7,sg:i?1:-1,sep:y=>.5*op(y,cst)}));core(it,5.4,0,2.8,y=>Math.max(0,.5*op(y,cst)-.04),'car');
+put(it,GP,-1.9,2.15,0,'#8e44c8','glp');beads(it,-1.9,3.3,0,'glp','#a76be0',1,1);
+put(it,GR,-8.1,2.65,0,'#58b83a','glp');beads(it,-8.1,3.7,0,'glp','#a76be0',.95,4);
+it.push({x:3.7,y:2.4,z:.1,r:.4,c:'#f2a21e',tag:'gll'});beads(it,3.7,2.7,.1,'gll','#a76be0',.9,2);
+chol(it,-3.6,1,.15,'chol');chol(it,3.9,-1,.15,'chol');chol(it,9.1,1,.15,'chol');
+put(it,PE,7.4,-3.75,.1,'#e2552b','per');
+for(const f of FB){const P=[];for(let k=0;k<=18;k++){const x=-13+26*k/18;P.push([x,f[1]+Math.sin(k*.8+f[0])*.3,f[2]+Math.sin(k*.5+f[0]*1.7)*.8])}
+it.push({pl:1,p:P,c:'#c25b0a',c2:'#f08a1c',c3:'#ffd9a3',w:f[3]+.04,tag:'per'})}
+it.push({pl:1,p:[[-9.7,2.4,.8],[-10,2.4,.8],[-10,-2.4,.8],[-9.7,-2.4,.8]],c:'#0f172a',c2:'#0f172a',w:.07});
+it.push({pl:1,p:[[-8.8,1.65,.8],[-9.1,1.65,.8],[-9.1,.15,.8],[-8.8,.15,.8]],c:'#0f172a',c2:'#0f172a',w:.07});
+for(const b of BD){const k=KS[b[0]-1];it.push({t:1,n:b[0],bc:BC[b[0]-1],x:b[1],y:b[2],z:b[3],hl:k==cur,txt:MT[k][0],a:cur&&k!=cur?.55:1})}
+},{auto:[-.2,.4],lim:1,fix:FX});
+st.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{clearInterval(timer);sel(b.dataset.k)});
+$('#sq').onclick=()=>{clearInterval(timer);let j=0;sel(KS[j++]);timer=setInterval(()=>{if(run)sel(KS[j++%KS.length])},3300)}}
+
+/* ================= 7. Пузырьковый перенос ================= */
+function vesV(st){const[,d,n,r,tx]=V[sub];
+st.insertAdjacentHTML('beforeend','<div class="card"><canvas id="cv" role="img" aria-label="Объёмная схема переноса в пузырьке в разрезе"></canvas><p>'+tx+'</p><small>Условная схема в разрезе. Оболочка пузырька — тоже липидный бислой. Потяните, чтобы повернуть.</small></div>');
+const CR=n=='big'?1.15:n==3?.42:.55,CP=n==3?[[0,0,0],[.65,.25,.3],[-.55,-.3,.45]]:[[0,0,0]],SH=n=='big'?2.2:n==3?1.6:1.2,
+SP=[...Array(60)].map((_,i)=>{const y=1-2*(i+.5)/60,q=Math.sqrt(1-y*y),a=i*2.39996;return[Math.cos(a)*q,y,Math.sin(a)*q]});
+V3($('#cv'),(it,s)=>{
+s.Wv=22;if(!s.off)s.pitch=.24;
+const u=(s.t%520)/520,e=u<.12?0:u>.88?1:(u-.12)/.76,k=e*e*(3-2*e),cy=d>0?5-10*k:-5+10*k,fd=d>0?cl((cy+4.5)/1.5):cl((4.5-cy)/1.5),al=cl(u/.06)*cl((1-u)/.06),
+ds=(x,z,L)=>(d>0?Math.min(0,cy-.5):Math.max(0,cy+.5))*Math.exp(-(x*x+z*z)/5)*fd*(L>0?1:.8);
+lip(it,s.t,[],ds,-.5,{xr:12});
+if(r)for(const[x,z]of[[-1.7,-1],[1.7,-1],[0,-2]]){const y=2.3+ds(x,z,1);it.push({l:1,x,y:y-.4,z,x2:x,y2:y+.9,z2:z,c:'#2f9e44',w:.11});
+it.push({l:1,x,y:y+.9,z,x2:x-.3,y2:y+1.4,z2:z,c:'#2f9e44',w:.1});it.push({l:1,x,y:y+.9,z,x2:x+.3,y2:y+1.4,z2:z,c:'#2f9e44',w:.1});
+it.push({x:x-.3,y:y+1.45,z,r:.2,c:'#58d06a'});it.push({x:x+.3,y:y+1.45,z,r:.2,c:'#58d06a'})}
+for(const q of CP)it.push({x:q[0],y:cy+q[1],z:q[2],r:CR,c:'#8b5cf6',a:al});
+const sa=cl((1.8-cy)/1.2)*al;
+if(sa>.02)for(const q of SP){it.push({x:q[0]*SH,y:cy+q[1]*SH,z:q[2]*SH,r:.2,c:'#2f6fe4',a:sa});it.push({x:q[0]*(SH-.55),y:cy+q[1]*(SH-.55),z:q[2]*(SH-.55),r:.16,c:'#2a5fd0',a:sa});
+it.push({l:1,x:q[0]*(SH-.15),y:cy+q[1]*(SH-.15),z:q[2]*(SH-.15),x2:q[0]*(SH-.42),y2:cy+q[1]*(SH-.42),z2:q[2]*(SH-.42),c:'#e5b414',w:.1,a:sa})}
+it.push({t:1,x:0,y:cy+SH+.5,z:0,txt:d>0?'⬇ внутрь клетки':'⬆ наружу',dx:0,dy:-6,c:'#6b21a8',a:al});
+},{auto:[-.3,.4],fix:FX})}
+
+/* ================= 2, 4, 5, 6. Транспорт частиц ================= */
+function sim(st,key){const sc=SC[key];
+st.insertAdjacentHTML('beforeend','<div class="card"><p class="pill">'+sc.ar+'</p><canvas id="cv" role="img" aria-label="3D-анимация переноса частиц через мембрану"></canvas><small>Потяните сцену, чтобы повернуть. Схема, не реальный масштаб.</small><p id="cn"></p><p>'+sc.x+'</p></div>');
+const PR={o:.4,k:.44,g:.5,w:.36,s:.8,n:.46,h:.34},zo=y=>y>2.35?0:y<-2.35?2:1,d2=(a,b)=>(a.x-b.x)**2+(a.z-b.z)**2,P=[];
+const mk=(k,j)=>k=='ch'?{h:[blob(.62,2.7,.8,115,j+5,{flare:.12,r:.34}),blob(.62,2.7,.8,115,j+6,{flare:.12,r:.34})],off:1.1,c:'#8b3fd0',hole:1.9}:
+k=='aq'?{h:[blob(.5,2.6,.7,90,j+7,{flare:.1,r:.32}),blob(.5,2.6,.7,90,j+8,{flare:.1,r:.32})],off:.9,c:'#0f9d94',hole:1.6}:
+{h:[blob(.7,2.7,.85,125,j+9,{flare:.1,r:.34}),blob(.7,2.7,.85,125,j+10,{flare:.1,r:.34})],off:.7,c:k=='cy'?'#d9541e':'#b44fd6',hole:1.55};
+const G=sc.g.map(([k,gx,v,a,atp],j)=>({k,x:(gx-320)/55*(sc.g.length>2?1.45:1.25),z:0,v,a,atp,f:0,st:0,s:0,m:mk(k,j*3)}));
+for(const s in sc.p)sc.p[s].forEach((n,q)=>{for(let j=0;j<n;j++)P.push({s,x:rn()*6.3,y:(q?-1:1)*(3+Math.random()*3.2),z:rn()*3,vx:rn()*.05,vy:rn()*.05,vz:rn()*.05})});
+const nr=p=>G.filter(g=>g.v==p.s).sort((a,b)=>d2(a,p)-d2(b,p))[0],ok=p=>{if(p.s=='o')return 1;const g=nr(p);return g&&d2(g,p)<.25};
+const fire=g=>{g.f=100;g.st=1-g.st;g.v.forEach(([s,n,a,b])=>P.filter(p=>p.s==s&&!p.w&&zo(p.y)==(a?2:0)).sort((u,v)=>d2(g,u)-d2(g,v)).slice(0,n).forEach((p,j)=>p.w={f:-j*18,a:[p.x,p.y,p.z],v:[g.x,0,g.z],b:[g.x+(j-1)*1.1,b?-4.3:4.3,g.z+(a?.9:-.9)]}))};
+function step(t){
+G.forEach(g=>{if(g.k=='cy'&&t%200==20)fire(g);if(g.f>0)g.f--;if(g.k=='cr')g.st=Math.floor(t/130)%2;g.s+=(g.st-g.s)*.07});
+for(const p of P){
+if(p.w){const w=p.w;w.f++;if(w.f>=0){const u=Math.min(w.f/90,1),A=u<.5?w.a:w.v,B=u<.5?w.v:w.b,e=u<.5?u*2:(u-.5)*2;p.x=A[0]+(B[0]-A[0])*e;p.y=A[1]+(B[1]-A[1])*e;p.z=A[2]+(B[2]-A[2])*e;if(u>=1){p.vy=(w.b[1]>0?1:-1)*.03;p.w=0}}continue}
+p.vx+=rn()*.01;p.vy+=rn()*.01;p.vz+=rn()*.01;const m=Math.hypot(p.vx,p.vy,p.vz);if(m>.1){p.vx*=.1/m;p.vy*=.1/m;p.vz*=.1/m}
+let nx=p.x+p.vx,ny=p.y+p.vy,nz=p.z+p.vz;
+if(Math.abs(nx)>8){p.vx*=-1;nx=p.x}if(Math.abs(nz)>3.2){p.vz*=-1;nz=p.z}if(Math.abs(ny)>6.4){p.vy*=-1;ny=p.y}
+if(zo(ny)==1&&zo(p.y)!=1&&!ok(p)){p.vy*=-1;ny=p.y}
+p.x=nx;p.y=ny;p.z=nz;
+if(zo(ny)==1&&p.s!='o'){const g=nr(p);if(g){p.x+=(g.x-p.x)*.15;p.z+=(g.z-p.z)*.15}}}}
+V3($('#cv'),(it,c)=>{
+if(run)step(c.t);
+c.Wv=22;if(!c.off)c.pitch=.3;
+lip(it,c.t,G.map(g=>[g.x,g.z,g.m.hole]),null,.5,{xr:12});
+for(const g of G){const M=g.m,col=g.k=='cy'&&g.f>0?'#ff4d2e':M.c,pump=g.k=='cy'||g.k=='cr',sep=y=>.55*op(y,g.s);
+M.h.forEach((B,i)=>put(it,B,g.x,0,g.z,col,null,pump?{dx:i?M.off:-M.off,sg:i?1:-1,sep}:{dx:i?M.off:-M.off}));
+core(it,g.x,g.z,2.7,pump?y=>Math.max(0,sep(y)-.04):()=>g.k=='aq'?.14:.2,null);
+it.push({t:1,x:g.x,y:3.4,z:g.z,txt:g.a,dx:0,dy:-6,c:'#0f172a'});
+if(g.atp){if(g.f>0){const q=1-g.f/100;it.push({x:g.x+.5,y:-3.6,z:.3,r:.34,c:'#fb923c',txt:'АДФ'});it.push({x:g.x-.7-q*.6,y:-3.6-q*1.2,z:.5,r:.27,c:'#ec4899',txt:'Фн'});it.push({t:1,x:g.x,y:5.1,z:g.z,txt:'АТФ → АДФ + Фн',dx:0,dy:-6,c:'#b91c1c'})}
+else it.push({x:g.x+.1,y:-3.7,z:.4,r:.44,c:'#facc15',txt:'АТФ',tc:'#422006'})}}
+for(const p of P)it.push({x:p.x,y:p.y,z:p.z,r:PR[p.s],c:SP[p.s][0],txt:SP[p.s][1],tc:SP[p.s][2]});
+if(sc.c&&c.t%10==0)$('#cn').textContent=SP[sc.c][1]+': снаружи '+P.filter(p=>p.s==sc.c&&zo(p.y)==0).length+', внутри '+P.filter(p=>p.s==sc.c&&zo(p.y)==2).length;
+},{auto:[-.25,.4],lim:1,fix:FX})}
+$('#bs').onclick=()=>go(0);$('#bp').onclick=()=>go(i-1);$('#bn').onclick=()=>go(i+1);$('#br').onclick=()=>view();
+const pz=()=>{document.body.classList.toggle('pz',!run);$('#bz').textContent=run?'Пауза':'Играть'};
+$('#bz').onclick=()=>{run=!run;pz()};
+pz();view();
+
+</script></body></html>
